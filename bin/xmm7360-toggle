@@ -9,12 +9,26 @@ notify() {
         notify-send -a "4G" -i network-modem "$1" "${2-}"
 }
 
+has_ip() { ip -4 addr show wwan0 2>/dev/null | grep -q 'inet '; }
+
 if systemctl is-active --quiet xmm7360.service; then
-    notify "4G" "Deconnexion..."
-    if systemctl stop xmm7360.service; then
-        notify "4G deconnectee"
+    if ! has_ip; then
+        # Unite active mais liaison morte (modem eteint par la veille) :
+        # le geste attendu est la reconnexion, pas l'arret.
+        notify "4G" "Liaison perdue, reconnexion..."
+        if systemctl restart xmm7360.service; then
+            addr=$(ip -4 -br addr show wwan0 2>/dev/null | awk '{print $3}')
+            notify "4G reconnectee" "${addr:-sans adresse}"
+        else
+            notify "4G" "Echec de la reconnexion (voir /var/log/xmm7360.log)"
+        fi
     else
-        notify "4G" "Echec de la deconnexion"
+        notify "4G" "Deconnexion..."
+        if systemctl stop xmm7360.service; then
+            notify "4G deconnectee"
+        else
+            notify "4G" "Echec de la deconnexion"
+        fi
     fi
 else
     notify "4G" "Connexion en cours..."

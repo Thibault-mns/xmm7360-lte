@@ -100,9 +100,8 @@ PlasmoidItem {
     Plasmoid.icon: statusIcon
 
     toolTipMainText: "Connexion 4G"
-    toolTipSubText: connected
-        ? (ipAddress !== "" ? ipAddress + "\n" : "")
-          + "↓ " + formatBytes(rxBytes) + "   ↑ " + formatBytes(txBytes)
+    toolTipSubText: connected && ipAddress !== ""
+        ? ipAddress + "\n↓ " + formatBytes(rxBytes) + "   ↑ " + formatBytes(txBytes)
         : statusText
 
     Plasmoid.contextualActions: [
@@ -157,6 +156,16 @@ PlasmoidItem {
         executable.run(pollCommand);
     }
 
+    // Action principale, partagee par le bouton et le clic du milieu :
+    // liaison perdue -> reconnecter ; sinon basculer.
+    function primaryAction() {
+        if (stale) {
+            reconnect();
+        } else {
+            toggle();
+        }
+    }
+
     function toggle() {
         if (busy) {
             return;
@@ -204,7 +213,7 @@ PlasmoidItem {
         }
         onClicked: mouse => {
             if (mouse.button === Qt.MiddleButton) {
-                root.toggle();
+                root.primaryAction();
             } else {
                 root.expanded = !wasExpanded;
             }
@@ -323,7 +332,7 @@ PlasmoidItem {
                 text: root.busy ? "Veuillez patienter…"
                      : root.stale ? "Reconnecter"
                      : root.connected ? "Déconnecter" : "Connecter"
-                onClicked: root.stale ? root.reconnect() : root.toggle()
+                onClicked: root.primaryAction()
             }
         }
     }

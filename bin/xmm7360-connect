@@ -4,6 +4,12 @@
 # ModemManager ne sait pas piloter).
 set -u
 
+if [ "$(id -u)" -ne 0 ]; then
+    echo "xmm7360: ce script doit tourner en root — passez par" >&2
+    echo "  systemctl start xmm7360   (ou sudo $0)" >&2
+    exit 1
+fi
+
 REPO="${XMM7360_REPO:-/home/thibault/xmm7360-pci}"
 SCRIPT="$REPO/rpc/open_xdatachannel.py"
 CONF="$REPO/xmm7360.ini"
@@ -24,12 +30,18 @@ wait_for_rpc() {
     return 1
 }
 
+# Un seul log par session de connexion, les deux tentatives a la suite :
+# tronquer dans connect() effacerait la premiere, la seule qui explique
+# pourquoi un rechargement du module a ete necessaire.
+: >"$LOG"
+
 connect() {
     wait_for_rpc || { log "$RPC_DEV absent apres 30 s"; return 1; }
+    echo "=== tentative $(date -Is) ===" >>"$LOG"
     # Le script sort en code 1 meme en cas de succes (sys.exit(1) final) et
     # en 0 quand l'ouverture RPC echoue : son code de retour n'est pas
     # exploitable, on juge sur la presence d'une adresse IP.
-    python3 "$SCRIPT" -c "$CONF" >"$LOG" 2>&1 || true
+    python3 "$SCRIPT" -c "$CONF" >>"$LOG" 2>&1 || true
     has_ip
 }
 

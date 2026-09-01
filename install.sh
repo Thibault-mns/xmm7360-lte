@@ -16,6 +16,16 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 
+echo "==> verification des dependances python"
+missing=""
+for mod in pyroute2 configargparse dbus; do
+    python3 -c "import $mod" 2>/dev/null || missing="$missing $mod"
+done
+if [ -n "$missing" ]; then
+    echo "    ATTENTION : modules python absents :$missing" >&2
+    echo "    sudo pacman -S --needed python-pyroute2 python-configargparse python-dbus" >&2
+fi
+
 echo "==> scripts dans /usr/local/bin"
 sudo install -m755 "$SRC"/bin/xmm7360-connect    /usr/local/bin/
 sudo install -m755 "$SRC"/bin/xmm7360-disconnect /usr/local/bin/
@@ -40,6 +50,7 @@ echo "==> lanceur et widget (utilisateur $USER)"
 install -Dm644 "$SRC"/desktop/xmm7360.desktop \
     "$HOME/.local/share/applications/xmm7360.desktop"
 mkdir -p "$HOME/.local/share/plasma/plasmoids"
+rm -rf "$HOME/.local/share/plasma/plasmoids/org.kde.xmm7360"
 cp -r "$SRC"/plasmoid/org.kde.xmm7360 "$HOME/.local/share/plasma/plasmoids/"
 
 echo "==> xmm7360-pci"
@@ -51,7 +62,8 @@ if [ -d "$XMM_REPO" ]; then
     fi
     if ! grep -q "family=socket.AF_INET" "$XMM_REPO/rpc/open_xdatachannel.py"; then
         echo "    application du correctif pyroute2"
-        git -C "$XMM_REPO" apply "$SRC"/patches/0001-pyroute2-0.9-address-family.patch
+        git -C "$XMM_REPO" apply "$SRC"/patches/0001-pyroute2-0.9-address-family.patch 2>/dev/null \
+            || patch -p1 -d "$XMM_REPO" < "$SRC"/patches/0001-pyroute2-0.9-address-family.patch
     fi
 else
     echo "    ATTENTION : $XMM_REPO absent. Clonez le depot amont :" >&2
