@@ -89,6 +89,14 @@ clic du milieu pour basculer, et deux actions au clic droit (*Reconnecter*,
 systemd-resolved sur `wwan0` (`resolvectl`) ; sans resolved, la résolution
 retombe sur ses serveurs de secours et fonctionne quand même.
 
+**Radio éteinte au démarrage** : `modprobe/xmm7360-lte.conf` blackliste
+`iosm` pour que le modem reste hors tension au boot. C'est sûr *uniquement*
+parce que `xmm7360-connect` charge le module explicitement (un blacklist ne
+bloque que le chargement automatique par alias, jamais un `modprobe`
+explicite). Supprimer ce fichier pour retrouver un modem alimenté dès le
+boot — par exemple pour que `enable xmm7360` connecte immédiatement après
+l'ouverture de session sans la latence du chargement.
+
 ## Changer d'opérateur (APN)
 
 L'APN est le seul paramètre propre à l'opérateur. **Le plus simple : le
@@ -117,8 +125,10 @@ grossit pas.
 
 1. **`blacklist iosm`** dans `/etc/modprobe.d/`, posé pour préparer
    l'installation du module communautaire. La compilation de celui-ci avait
-   échoué, laissant le modem sans aucun pilote. Le blacklist est inutile *et*
-   nuisible : le module communautaire ne sert à rien.
+   échoué, laissant le modem sans aucun pilote — un blacklist n'est
+   inoffensif que si quelque chose charge le module explicitement. Ce dépôt
+   en installe d'ailleurs un (`modprobe/xmm7360-lte.conf`, radio éteinte au
+   boot), mais accompagné du `modprobe iosm` explicite de `xmm7360-connect`.
 2. **La compilation du module communautaire** est inutile — voir plus haut, les
    scripts RPC parlent directement au pilote noyau.
 3. **pyroute2 ≥ 0.9 casse `open_xdatachannel.py`** : `dst='default'` n'infère
@@ -172,6 +182,7 @@ bin/xmm7360-status        état en 6 lignes (dont cumul mensuel), consommé par 
 bin/xmm7360-apn           lecture/écriture validée de l'APN (widget et CLI)
 systemd/                  unité principale + relance au réveil de veille
 polkit/                   start/stop sans mot de passe pour le groupe wheel
+modprobe/                 radio éteinte au boot (blacklist + chargement explicite)
 plasmoid/                 widget Plasma 6
 desktop/                  lanceur pour le menu KDE
 patches/                  correctif pyroute2 ≥ 0.9 pour xmm7360-pci

@@ -18,6 +18,7 @@ sudo rm -f /usr/local/bin/xmm7360-connect \
            /usr/local/bin/xmm7360-status \
            /usr/local/bin/xmm7360-apn
 sudo rm -f /etc/polkit-1/rules.d/49-xmm7360.rules
+sudo rm -f /etc/modprobe.d/xmm7360-lte.conf
 
 rm -f "$HOME/.local/share/applications/xmm7360.desktop"
 rm -rf "$HOME/.local/share/plasma/plasmoids/org.kde.xmm7360"

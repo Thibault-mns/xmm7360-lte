@@ -41,10 +41,18 @@ sudo systemctl daemon-reload
 echo "==> regle polkit"
 sudo install -m644 "$SRC"/polkit/49-xmm7360.rules /etc/polkit-1/rules.d/
 
-echo "==> verification du blacklist iosm"
-if grep -rqs "^blacklist[[:space:]]\+iosm" /etc/modprobe.d/; then
-    echo "    ATTENTION : iosm est blackliste dans /etc/modprobe.d/, le modem" >&2
-    echo "    restera sans pilote. Retirez cette ligne." >&2
+echo "==> radio eteinte au demarrage (modprobe.d)"
+sudo install -m644 "$SRC"/modprobe/xmm7360-lte.conf /etc/modprobe.d/
+
+echo "==> verification des blacklists iosm etrangers"
+# Notre propre xmm7360-lte.conf est legitime (chargement explicite par
+# xmm7360-connect) ; tout autre blacklist de iosm est un reste de bricolage
+# qui, lui, n'est accompagne d'aucun chargement.
+foreign=$(grep -rls "^blacklist[[:space:]]\+iosm" /etc/modprobe.d/ 2>/dev/null \
+    | grep -v '/xmm7360-lte\.conf$' || true)
+if [ -n "$foreign" ]; then
+    echo "    ATTENTION : blacklist iosm etranger detecte :" >&2
+    echo "$foreign" | sed 's/^/      /' >&2
 fi
 
 echo "==> lanceur et widget (utilisateur $USER)"
