@@ -82,6 +82,30 @@ Le widget offre en plus : icône d'état dans le panneau, infobulle avec l'IP et
 le trafic, clic du milieu pour basculer, et deux actions au clic droit
 (*Reconnecter*, *Ouvrir le journal*).
 
+## Changer d'opérateur (APN)
+
+L'APN est le seul paramètre propre à l'opérateur, dans
+`~/xmm7360-pci/xmm7360.ini` :
+
+```ini
+apn=free
+```
+
+Modifier la valeur puis `systemctl restart xmm7360`. APN grand public
+français : Free `free`, Orange/Sosh `orange`, SFR/RED `sl2sfr`,
+Bouygues/B&You `mmsbouygtel.com` ; pour un MVNO, chercher « APN Android »
+dans sa doc. Un APN faux donne un attach sans adresse IP — visible dans
+`/var/log/xmm7360.log`.
+
+**Code PIN : à désactiver.** Cette pile ne sait pas présenter le PIN — la
+méthode du projet amont passe par les ports AT, muets en mode RPC. Mettre
+la SIM dans un téléphone et désactiver le verrouillage SIM avant de
+l'insérer dans le PC.
+
+Au passage : le journal `/var/log/xmm7360.log` est tronqué à chaque
+connexion et ne contient que la dernière session (~60 Ko au plus). Il ne
+grossit pas.
+
 ## Les trois pièges rencontrés
 
 1. **`blacklist iosm`** dans `/etc/modprobe.d/`, posé pour préparer
