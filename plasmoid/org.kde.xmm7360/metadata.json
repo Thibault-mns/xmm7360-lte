@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Id": "org.kde.xmm7360",
+        "Name": "Connexion 4G (XMM7360)",
+        "Description": "État et bascule de la connexion LTE du modem Fibocom L850-GL",
+        "Icon": "network-modem",
+        "Category": "Network",
+        "License": "MIT",
+        "Version": "1.0",
+        "EnabledByDefault": true
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-NotificationArea": true,
+    "X-Plasma-NotificationAreaCategory": "Hardware"
+}

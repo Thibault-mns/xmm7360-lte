@@ -1,0 +1,14 @@
+[Unit]
+Description=Connexion LTE XMM7360 (Fibocom L850-GL)
+Documentation=https://github.com/xmm7360/xmm7360-pci
+After=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=300
+ExecStart=/usr/local/bin/xmm7360-connect
+ExecStop=/usr/local/bin/xmm7360-disconnect
+
+[Install]
+WantedBy=multi-user.target

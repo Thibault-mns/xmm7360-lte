@@ -1,0 +1,14 @@
+// Autorise les membres du groupe wheel a piloter la connexion 4G depuis une
+// session locale active, sans mot de passe. Necessaire pour que le lanceur
+// KDE (xmm7360-toggle) fonctionne d'un simple clic.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("unit") == "xmm7360.service" &&
+        subject.isInGroup("wheel") &&
+        subject.local && subject.active) {
+        var verb = action.lookup("verb");
+        if (verb == "start" || verb == "stop" || verb == "restart") {
+            return polkit.Result.YES;
+        }
+    }
+});

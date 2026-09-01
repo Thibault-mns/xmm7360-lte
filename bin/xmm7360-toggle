@@ -1,0 +1,27 @@
+#!/bin/bash
+# Bascule la connexion LTE et notifie le resultat.
+# Destine a un lanceur KDE : s'execute en utilisateur, la regle polkit
+# 49-xmm7360.rules autorise start/stop de l'unite sans mot de passe.
+set -u
+
+notify() {
+    command -v notify-send >/dev/null 2>&1 && \
+        notify-send -a "4G" -i network-modem "$1" "${2-}"
+}
+
+if systemctl is-active --quiet xmm7360.service; then
+    notify "4G" "Deconnexion..."
+    if systemctl stop xmm7360.service; then
+        notify "4G deconnectee"
+    else
+        notify "4G" "Echec de la deconnexion"
+    fi
+else
+    notify "4G" "Connexion en cours..."
+    if systemctl start xmm7360.service; then
+        addr=$(ip -4 -br addr show wwan0 2>/dev/null | awk '{print $3}')
+        notify "4G connectee" "${addr:-sans adresse}"
+    else
+        notify "4G" "Echec de la connexion (voir /var/log/xmm7360.log)"
+    fi
+fi

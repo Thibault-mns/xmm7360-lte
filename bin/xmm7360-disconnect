@@ -1,0 +1,12 @@
+#!/bin/bash
+# Coupe la liaison LTE du modem XMM7360.
+# Les scripts RPC ne savent pas detacher le modem du reseau : le
+# dechargement du module iosm est le seul moyen fiable de le faire, et il
+# a l'avantage de couper l'alimentation de la radio.
+set -u
+
+ip link set wwan0 down 2>/dev/null || true
+ip addr flush dev wwan0 2>/dev/null || true
+modprobe -r iosm 2>/dev/null || true
+
+echo "xmm7360: deconnecte (module iosm decharge)"

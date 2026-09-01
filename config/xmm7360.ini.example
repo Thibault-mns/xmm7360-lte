@@ -1,0 +1,8 @@
+# APN Free Mobile
+apn=free
+
+# NetworkManager regenere /etc/resolv.conf : on evite que le script y ecrive
+noresolv=True
+
+# integration NetworkManager (a activer dans un second temps)
+#dbus=True

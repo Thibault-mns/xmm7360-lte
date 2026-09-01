@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Name=4G (modem XMM7360)
+GenericName=Connexion mobile
+Comment=Connecter ou déconnecter le modem LTE
+Exec=/usr/local/bin/xmm7360-toggle
+Icon=network-modem
+Terminal=false
+Categories=Network;
+Keywords=4G;LTE;modem;SIM;mobile;
+Actions=connect;disconnect;
+
+[Desktop Action connect]
+Name=Connecter
+Exec=systemctl start xmm7360.service
+
+[Desktop Action disconnect]
+Name=Déconnecter
+Exec=systemctl stop xmm7360.service

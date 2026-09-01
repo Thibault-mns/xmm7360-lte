@@ -1,0 +1,32 @@
+#!/bin/bash
+# Etat de la connexion LTE XMM7360, en une ligne par champ.
+# Sortie stable a 5 lignes, champs vides inclus, pour que le widget Plasma
+# puisse indexer sans risque de decalage :
+#   1  etat de l'unite systemd (active / inactive / activating / failed...)
+#   2  adresse IPv4 de wwan0 (vide si absente)
+#   3  octets recus (vide si l'interface n'existe pas)
+#   4  octets emis
+#   5  secondes depuis l'etablissement de la connexion (vide si inactive)
+set -u
+
+UNIT=xmm7360.service
+STATS=/sys/class/net/wwan0/statistics
+
+state=$(systemctl is-active "$UNIT" 2>/dev/null)
+
+# ActiveEnterTimestamp survit a l'arret de l'unite : sans ce garde-fou, une
+# unite inactive afficherait la duree de sa derniere session.
+elapsed=""
+if [ "$state" = "active" ]; then
+    ts=$(systemctl show -p ActiveEnterTimestamp --value "$UNIT" 2>/dev/null)
+    if [ -n "$ts" ] && start=$(date -d "$ts" +%s 2>/dev/null); then
+        elapsed=$(( $(date +%s) - start ))
+    fi
+fi
+
+printf '%s\n' \
+    "$state" \
+    "$(ip -4 -br addr show wwan0 2>/dev/null | awk '{print $3}')" \
+    "$(cat "$STATS/rx_bytes" 2>/dev/null)" \
+    "$(cat "$STATS/tx_bytes" 2>/dev/null)" \
+    "$elapsed"

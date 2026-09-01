@@ -1,0 +1,27 @@
+diff --git a/rpc/open_xdatachannel.py b/rpc/open_xdatachannel.py
+index 2684205..95ea8d0 100755
+--- a/rpc/open_xdatachannel.py
++++ b/rpc/open_xdatachannel.py
+@@ -104,10 +104,18 @@ ipr.addr('add',
+ 
+ 
+ if not cfg.nodefaultroute:
+-    ipr.route('add',
+-              dst='default',
+-              priority=cfg.metric,
+-              oif=idx)
++    # pyroute2 >= 0.9 n'infere plus la famille depuis dst='default' et envoie
++    # AF_UNSPEC, que le noyau refuse avec EOPNOTSUPP : on la precise.
++    # Non fatal : une route manquante ne doit pas empecher l'ouverture du
++    # canal de donnees, qui se fait plus bas.
++    try:
++        ipr.route('add',
++                  family=socket.AF_INET,
++                  dst='0.0.0.0/0',
++                  priority=cfg.metric,
++                  oif=idx)
++    except Exception as ex:
++        logging.warning("Could not add default route: %s", ex)
+ 
+ # Add DNS values to /etc/resolv.conf
+ if not cfg.noresolv:

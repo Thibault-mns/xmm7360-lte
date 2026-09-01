@@ -1,0 +1,55 @@
+#!/bin/bash
+# Etablit la connexion LTE du modem Intel XMM7360 / Fibocom L850-GL
+# par-dessus le pilote noyau iosm (le modem est en mode RPC, que
+# ModemManager ne sait pas piloter).
+set -u
+
+REPO="${XMM7360_REPO:-/home/thibault/xmm7360-pci}"
+SCRIPT="$REPO/rpc/open_xdatachannel.py"
+CONF="$REPO/xmm7360.ini"
+RPC_DEV=/dev/wwan0xmmrpc0
+LOG=/var/log/xmm7360.log
+
+log() { echo "xmm7360: $*"; }
+
+has_ip() { ip -4 addr show wwan0 2>/dev/null | grep -q 'inet '; }
+
+wait_for_rpc() {
+    # La deconnexion decharge iosm : on le recharge sans attendre le timeout.
+    [ -e "$RPC_DEV" ] || modprobe iosm 2>/dev/null || true
+    for _ in $(seq 1 30); do
+        [ -e "$RPC_DEV" ] && return 0
+        sleep 1
+    done
+    return 1
+}
+
+connect() {
+    wait_for_rpc || { log "$RPC_DEV absent apres 30 s"; return 1; }
+    # Le script sort en code 1 meme en cas de succes (sys.exit(1) final) et
+    # en 0 quand l'ouverture RPC echoue : son code de retour n'est pas
+    # exploitable, on juge sur la presence d'une adresse IP.
+    python3 "$SCRIPT" -c "$CONF" >"$LOG" 2>&1 || true
+    has_ip
+}
+
+if connect; then
+    log "connecte : $(ip -4 -br addr show wwan0)"
+    exit 0
+fi
+
+# Au reveil de veille le modem est eteint : un cycle complet du module le
+# remet dans un etat propre.
+log "pas d'IP au premier essai, rechargement du module iosm"
+modprobe -r iosm || true
+sleep 2
+modprobe iosm || { log "echec du chargement de iosm"; exit 1; }
+sleep 3
+
+if connect; then
+    log "connecte apres rechargement : $(ip -4 -br addr show wwan0)"
+    exit 0
+fi
+
+log "echec : pas d'adresse IP sur wwan0 (details dans $LOG)"
+exit 1
