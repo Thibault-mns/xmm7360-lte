@@ -40,6 +40,9 @@ PlasmoidItem {
 
     readonly property bool connected: unitState === "active"
     readonly property bool failed: unitState === "failed"
+    // Le modem s'eteint en veille mais l'unite reste active (RemainAfterExit) :
+    // unite active sans adresse IP = liaison morte, a afficher honnetement.
+    readonly property bool stale: connected && !busy && ipAddress === ""
     // systemctl passe par "activating"/"deactivating" : on les traite comme
     // une operation en cours au meme titre qu'une commande lancee d'ici.
     readonly property bool busy: commandPending
@@ -48,11 +51,13 @@ PlasmoidItem {
 
     readonly property string statusIcon: busy
         ? "network-mobile-available-symbolic"
+        : stale ? "network-limited-symbolic"
         : connected ? "network-mobile-100-lte-symbolic"
                     : "network-mobile-off-symbolic"
 
     readonly property string statusText: busy
         ? "Opération en cours…"
+        : stale ? "Liaison perdue — reconnectez"
         : connected ? "Connectée"
         : failed ? "Échec de la connexion"
                  : "Déconnectée"
@@ -316,8 +321,9 @@ PlasmoidItem {
                 enabled: !root.busy
                 icon.name: root.connected ? "network-disconnect" : "network-connect"
                 text: root.busy ? "Veuillez patienter…"
+                     : root.stale ? "Reconnecter"
                      : root.connected ? "Déconnecter" : "Connecter"
-                onClicked: root.toggle()
+                onClicked: root.stale ? root.reconnect() : root.toggle()
             }
         }
     }

@@ -9,4 +9,11 @@ ip link set wwan0 down 2>/dev/null || true
 ip addr flush dev wwan0 2>/dev/null || true
 modprobe -r iosm 2>/dev/null || true
 
+# modprobe -r echoue silencieusement si le module est occupe : verifier,
+# sinon on annoncerait une radio coupee alors qu'elle emet encore.
+if lsmod | grep -q '^iosm '; then
+    echo "xmm7360: ATTENTION, le module iosm n'a pas pu etre decharge" >&2
+    exit 1
+fi
+
 echo "xmm7360: deconnecte (module iosm decharge)"
