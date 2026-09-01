@@ -1,0 +1,35 @@
+#!/bin/bash
+# Lit ou modifie l'APN dans xmm7360.ini (fichier utilisateur, pas de root).
+# Utilise par le widget Plasma ; la validation stricte est ici pour qu'une
+# valeur saisie dans l'interface ne puisse jamais injecter de shell ni
+# corrompre le fichier de configuration.
+set -u
+
+REPO="${XMM7360_REPO:-/home/thibault/xmm7360-pci}"
+CONF="$REPO/xmm7360.ini"
+
+case "${1-}" in
+    get)
+        sed -n 's/^apn=//p' "$CONF" 2>/dev/null | head -1
+        ;;
+    set)
+        apn="${2-}"
+        if ! [[ "$apn" =~ ^[A-Za-z0-9._-]{1,64}$ ]]; then
+            echo "xmm7360-apn: APN invalide (lettres, chiffres, . _ - uniquement)" >&2
+            exit 1
+        fi
+        if [ ! -e "$CONF" ]; then
+            echo "xmm7360-apn: $CONF introuvable" >&2
+            exit 1
+        fi
+        if grep -q '^apn=' "$CONF"; then
+            sed -i "s|^apn=.*|apn=$apn|" "$CONF"
+        else
+            echo "apn=$apn" >> "$CONF"
+        fi
+        ;;
+    *)
+        echo "usage: xmm7360-apn get | set <apn>" >&2
+        exit 2
+        ;;
+esac

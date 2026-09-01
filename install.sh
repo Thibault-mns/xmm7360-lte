@@ -31,6 +31,7 @@ sudo install -m755 "$SRC"/bin/xmm7360-connect    /usr/local/bin/
 sudo install -m755 "$SRC"/bin/xmm7360-disconnect /usr/local/bin/
 sudo install -m755 "$SRC"/bin/xmm7360-toggle     /usr/local/bin/
 sudo install -m755 "$SRC"/bin/xmm7360-status     /usr/local/bin/
+sudo install -m755 "$SRC"/bin/xmm7360-apn        /usr/local/bin/
 
 echo "==> unites systemd"
 sudo install -m644 "$SRC"/systemd/xmm7360.service        /etc/systemd/system/

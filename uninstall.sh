@@ -15,7 +15,8 @@ sudo systemctl daemon-reload
 sudo rm -f /usr/local/bin/xmm7360-connect \
            /usr/local/bin/xmm7360-disconnect \
            /usr/local/bin/xmm7360-toggle \
-           /usr/local/bin/xmm7360-status
+           /usr/local/bin/xmm7360-status \
+           /usr/local/bin/xmm7360-apn
 sudo rm -f /etc/polkit-1/rules.d/49-xmm7360.rules
 
 rm -f "$HOME/.local/share/applications/xmm7360.desktop"

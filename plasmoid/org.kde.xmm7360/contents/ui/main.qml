@@ -30,6 +30,9 @@ PlasmoidItem {
     // L'ecrire ici rendrait le QML illisible et impossible a tester seul.
     readonly property string pollCommand: "xmm7360-status"
     readonly property string logFile: "/var/log/xmm7360.log"
+    readonly property string apnGetCmd: "xmm7360-apn get"
+
+    property string apnValue: ""
 
     property string unitState: "unknown"
     property string ipAddress: ""
@@ -144,6 +147,18 @@ PlasmoidItem {
             elapsedSeconds = toInt((l[4] || "").trim());
             return;
         }
+        if (source === apnGetCmd) {
+            apnValue = stdout.trim();
+            return;
+        }
+        if (source.indexOf("xmm7360-apn set ") === 0) {
+            executable.run(apnGetCmd);
+            // Une liaison etablie tourne encore sur l'ancien APN : relancer.
+            if (connected) {
+                reconnect();
+            }
+            return;
+        }
         // Ne liberer le verrou que pour les commandes qui l'ont pose : ouvrir
         // le journal ne doit pas debloquer une bascule encore en cours.
         if (source.indexOf("systemctl ") === 0) {
@@ -183,9 +198,21 @@ PlasmoidItem {
         executable.run("systemctl restart " + unit);
     }
 
+    function applyApn(apn) {
+        apn = apn.trim();
+        // Meme validation que xmm7360-apn : ceinture et bretelles, la valeur
+        // saisie part dans une ligne de commande shell.
+        if (apn === apnValue || !/^[A-Za-z0-9._-]{1,64}$/.test(apn)) {
+            return;
+        }
+        executable.run("xmm7360-apn set " + apn);
+    }
+
     function openLog() {
         executable.run("xdg-open " + logFile);
     }
+
+    Component.onCompleted: executable.run(apnGetCmd)
 
     Timer {
         interval: 5000
@@ -229,7 +256,7 @@ PlasmoidItem {
 
     fullRepresentation: Item {
         Layout.minimumWidth: Kirigami.Units.gridUnit * 18
-        Layout.minimumHeight: Kirigami.Units.gridUnit * 15
+        Layout.minimumHeight: Kirigami.Units.gridUnit * 17
 
         ColumnLayout {
             anchors.fill: parent
@@ -312,12 +339,34 @@ PlasmoidItem {
                 }
 
                 PlasmaComponents.Label {
-                    text: "Opérateur :"
+                    text: "APN :"
                     opacity: 0.7
                 }
-                PlasmaComponents.Label {
+                PlasmaComponents.ComboBox {
+                    id: apnBox
                     Layout.fillWidth: true
-                    text: "Free (APN free)"
+                    editable: true
+                    model: ["free", "orange", "sl2sfr", "mmsbouygtel.com"]
+                    onAccepted: root.applyApn(editText)
+                    onActivated: root.applyApn(currentText)
+
+                    Component.onCompleted: editText = root.apnValue
+
+                    Connections {
+                        target: root
+                        function onApnValueChanged() {
+                            apnBox.editText = root.apnValue;
+                        }
+                    }
+                }
+
+                PlasmaComponents.Label {
+                    Layout.columnSpan: 2
+                    Layout.fillWidth: true
+                    text: "free = Free · orange = Orange · sl2sfr = SFR · mmsbouygtel.com = Bouygues.\nSIM à code PIN : le désactiver via un téléphone avant de l'insérer."
+                    font: Kirigami.Theme.smallFont
+                    opacity: 0.6
+                    wrapMode: Text.WordWrap
                 }
             }
 

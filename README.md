@@ -84,14 +84,14 @@ le trafic, clic du milieu pour basculer, et deux actions au clic droit
 
 ## Changer d'opérateur (APN)
 
-L'APN est le seul paramètre propre à l'opérateur, dans
-`~/xmm7360-pci/xmm7360.ini` :
+L'APN est le seul paramètre propre à l'opérateur. **Le plus simple : le
+sélecteur dans le widget** (liste déroulante éditable, presets des quatre
+opérateurs français) — il écrit la configuration via `xmm7360-apn` et
+relance la connexion si elle est active.
 
-```ini
-apn=free
-```
-
-Modifier la valeur puis `systemctl restart xmm7360`. APN grand public
+En ligne de commande : `xmm7360-apn set <apn>` puis
+`systemctl restart xmm7360`, ou éditer directement
+`~/xmm7360-pci/xmm7360.ini` (`apn=...`). APN grand public
 français : Free `free`, Orange/Sosh `orange`, SFR/RED `sl2sfr`,
 Bouygues/B&You `mmsbouygtel.com` ; pour un MVNO, chercher « APN Android »
 dans sa doc. Un APN faux donne un attach sans adresse IP — visible dans
@@ -162,6 +162,7 @@ bin/xmm7360-connect       établit la connexion (juge sur l'IP, recharge iosm au
 bin/xmm7360-disconnect    coupe la radio en déchargeant iosm
 bin/xmm7360-toggle        bascule + notification de bureau
 bin/xmm7360-status        état en 5 lignes, consommé par le widget
+bin/xmm7360-apn           lecture/écriture validée de l'APN (widget et CLI)
 systemd/                  unité principale + relance au réveil de veille
 polkit/                   start/stop sans mot de passe pour le groupe wheel
 plasmoid/                 widget Plasma 6
