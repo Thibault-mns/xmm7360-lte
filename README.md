@@ -79,8 +79,15 @@ pour le groupe `wheel`, depuis une session locale active — c'est ce qui permet
 au widget et au lanceur de fonctionner d'un clic.
 
 Le widget offre en plus : icône d'état dans le panneau, infobulle avec l'IP et
-le trafic, clic du milieu pour basculer, et deux actions au clic droit
-(*Reconnecter*, *Ouvrir le journal*).
+le trafic, **consommation cumulée du mois calendaire** (tenue par
+`xmm7360-status` dans `~/.local/state/xmm7360/usage` — elle ne compte que
+pendant que le widget sonde, soit au pire ~5 s de trafic perdues par session),
+clic du milieu pour basculer, et deux actions au clic droit (*Reconnecter*,
+*Ouvrir le journal*).
+
+À la connexion, les DNS fournis par l'opérateur sont déclarés à
+systemd-resolved sur `wwan0` (`resolvectl`) ; sans resolved, la résolution
+retombe sur ses serveurs de secours et fonctionne quand même.
 
 ## Changer d'opérateur (APN)
 
@@ -161,7 +168,7 @@ interroger, l'absence de réponse est normale.
 bin/xmm7360-connect       établit la connexion (juge sur l'IP, recharge iosm au besoin)
 bin/xmm7360-disconnect    coupe la radio en déchargeant iosm
 bin/xmm7360-toggle        bascule + notification de bureau
-bin/xmm7360-status        état en 5 lignes, consommé par le widget
+bin/xmm7360-status        état en 6 lignes (dont cumul mensuel), consommé par le widget
 bin/xmm7360-apn           lecture/écriture validée de l'APN (widget et CLI)
 systemd/                  unité principale + relance au réveil de veille
 polkit/                   start/stop sans mot de passe pour le groupe wheel

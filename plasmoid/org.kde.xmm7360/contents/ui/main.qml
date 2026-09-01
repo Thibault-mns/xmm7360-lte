@@ -39,6 +39,7 @@ PlasmoidItem {
     property real rxBytes: -1
     property real txBytes: -1
     property int elapsedSeconds: -1
+    property real monthlyBytes: -1
     property bool commandPending: false
 
     readonly property bool connected: unitState === "active"
@@ -103,9 +104,10 @@ PlasmoidItem {
     Plasmoid.icon: statusIcon
 
     toolTipMainText: "Connexion 4G"
-    toolTipSubText: connected && ipAddress !== ""
+    toolTipSubText: (connected && ipAddress !== ""
         ? ipAddress + "\n↓ " + formatBytes(rxBytes) + "   ↑ " + formatBytes(txBytes)
-        : statusText
+        : statusText)
+        + (monthlyBytes >= 0 ? "\nCe mois-ci : " + formatBytes(monthlyBytes) : "")
 
     Plasmoid.contextualActions: [
         PlasmaCore.Action {
@@ -145,6 +147,7 @@ PlasmoidItem {
             rxBytes = toInt((l[2] || "").trim());
             txBytes = toInt((l[3] || "").trim());
             elapsedSeconds = toInt((l[4] || "").trim());
+            monthlyBytes = toInt((l[5] || "").trim());
             return;
         }
         if (source === apnGetCmd) {
@@ -256,7 +259,7 @@ PlasmoidItem {
 
     fullRepresentation: Item {
         Layout.minimumWidth: Kirigami.Units.gridUnit * 18
-        Layout.minimumHeight: Kirigami.Units.gridUnit * 17
+        Layout.minimumHeight: Kirigami.Units.gridUnit * 18
 
         ColumnLayout {
             anchors.fill: parent
@@ -336,6 +339,15 @@ PlasmoidItem {
                     visible: root.connected
                     Layout.fillWidth: true
                     text: root.formatDuration(root.elapsedSeconds)
+                }
+
+                PlasmaComponents.Label {
+                    text: "Ce mois-ci :"
+                    opacity: 0.7
+                }
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    text: root.formatBytes(root.monthlyBytes)
                 }
 
                 PlasmaComponents.Label {

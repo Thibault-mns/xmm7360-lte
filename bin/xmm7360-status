@@ -7,6 +7,14 @@
 #   3  octets recus (vide si l'interface n'existe pas)
 #   4  octets emis
 #   5  secondes depuis l'etablissement de la connexion (vide si inactive)
+#   6  octets cumules sur le mois calendaire (recu + emis)
+#
+# Le cumul mensuel est necessaire parce que les compteurs noyau repartent
+# de zero a chaque dechargement du module iosm (donc a chaque deconnexion).
+# Il est tenu ici par deltas entre deux appels, avec detection des remises
+# a zero. Limite assumee : il ne compte que pendant que quelque chose
+# appelle ce script (le widget, toutes les 5 s) — au pire ~5 s de trafic
+# perdues par session, negligeable a l'echelle d'un forfait.
 set -u
 
 UNIT=xmm7360.service
@@ -24,9 +32,39 @@ if [ "$state" = "active" ]; then
     fi
 fi
 
+rx=$(cat "$STATS/rx_bytes" 2>/dev/null)
+tx=$(cat "$STATS/tx_bytes" 2>/dev/null)
+
+# --- cumul mensuel ---
+USAGE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/xmm7360"
+USAGE_FILE="$USAGE_DIR/usage"
+month=$(date +%Y-%m)
+total=0 last_rx=0 last_tx=0 f_month=""
+[ -r "$USAGE_FILE" ] && read -r f_month total last_rx last_tx < "$USAGE_FILE" 2>/dev/null
+# Au changement de mois, seul le cumul repart de zero : garder les derniers
+# releves evite de recompter dans le nouveau mois une session a cheval.
+[ "$f_month" = "$month" ] || total=0
+
+if [ -n "$rx" ] && [ -n "$tx" ]; then
+    # Compteur inferieur au dernier releve = module recharge entre-temps :
+    # tout le compteur courant est du trafic nouveau.
+    d_rx=$(( rx >= last_rx ? rx - last_rx : rx ))
+    d_tx=$(( tx >= last_tx ? tx - last_tx : tx ))
+    if [ $((d_rx + d_tx)) -gt 0 ] || [ "$f_month" != "$month" ]; then
+        total=$(( total + d_rx + d_tx ))
+        mkdir -p "$USAGE_DIR" 2>/dev/null
+        # Ecriture atomique : un poll interrompu ne doit pas corrompre l'etat.
+        if printf '%s %s %s %s\n' "$month" "$total" "$rx" "$tx" \
+                > "$USAGE_FILE.tmp" 2>/dev/null; then
+            mv -f "$USAGE_FILE.tmp" "$USAGE_FILE"
+        fi
+    fi
+fi
+
 printf '%s\n' \
     "$state" \
     "$(ip -4 -br addr show wwan0 2>/dev/null | awk '{print $3}')" \
-    "$(cat "$STATS/rx_bytes" 2>/dev/null)" \
-    "$(cat "$STATS/tx_bytes" 2>/dev/null)" \
-    "$elapsed"
+    "$rx" \
+    "$tx" \
+    "$elapsed" \
+    "$total"

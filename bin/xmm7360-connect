@@ -45,7 +45,23 @@ connect() {
     has_ip
 }
 
+# Declare aupres de systemd-resolved les DNS que le reseau mobile a fournis
+# (le script python les journalise) : sans cela, la resolution en 4G seule
+# retombe sur les serveurs de secours generiques de resolved. Best effort :
+# une distribution sans resolved fonctionne quand meme, via ces secours.
+setup_dns() {
+    local dns
+    dns=$(grep "DNS server(s):" "$LOG" | tail -1 | sed 's/.*: //; s/,//g')
+    [ -n "$dns" ] || return 0
+    # shellcheck disable=SC2086
+    resolvectl dns wwan0 $dns 2>/dev/null \
+        && resolvectl default-route wwan0 true 2>/dev/null \
+        && log "DNS declares sur wwan0 : $dns" \
+        || log "resolvectl indisponible, DNS de secours de resolved utilises"
+}
+
 if connect; then
+    setup_dns
     log "connecte : $(ip -4 -br addr show wwan0)"
     exit 0
 fi
@@ -59,6 +75,7 @@ modprobe iosm || { log "echec du chargement de iosm"; exit 1; }
 sleep 3
 
 if connect; then
+    setup_dns
     log "connecte apres rechargement : $(ip -4 -br addr show wwan0)"
     exit 0
 fi
