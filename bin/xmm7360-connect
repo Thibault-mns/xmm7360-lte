@@ -41,7 +41,11 @@ connect() {
     # Le script sort en code 1 meme en cas de succes (sys.exit(1) final) et
     # en 0 quand l'ouverture RPC echoue : son code de retour n'est pas
     # exploitable, on juge sur la presence d'une adresse IP.
-    python3 "$SCRIPT" -c "$CONF" >>"$LOG" 2>&1 || true
+    # Borne dure : quand le modem s'attache sans obtenir d'IP (demarrage a
+    # froid), open_xdatachannel.py boucle sans fin — sans timeout, le second
+    # essai avec rechargement du module n'aurait jamais sa chance et l'unite
+    # resterait "activating" jusqu'au TimeoutStartSec de systemd.
+    timeout --kill-after=10 90 python3 "$SCRIPT" -c "$CONF" >>"$LOG" 2>&1 || true
     has_ip
 }
 
