@@ -156,8 +156,12 @@ grossit pas.
   bouton « Connecter » n'applique qu'une IP statique sans lancer la séquence
   RPC : l'indicateur mentirait. Elle force en plus `ipv6: ignore`, ce qui fait
   perdre l'IPv6. Écartée volontairement.
-- **Le modem s'éteint en veille.** D'où `xmm7360-resume.service`, et le
-  rechargement de `iosm` en second essai dans `xmm7360-connect`.
+- **Le modem s'éteint en veille — et la veille S3 peut le figer au niveau
+  PCI** : au réveil, `iosm` se charge mais aucun port `wwan` n'apparaît, et
+  recharger le module ne suffit pas. `xmm7360-connect` détecte ce cas (module
+  chargé, ports absents après 10 s) et fait un remove/rescan PCI, qui
+  réinitialise réellement le périphérique. `xmm7360-resume.service` relance
+  le tout au réveil.
 - **Codes de retour inexploitables** : `open_xdatachannel.py` sort en 1 en cas
   de succès (`sys.exit(1)` final) et en 0 quand l'ouverture RPC échoue. Les
   scripts jugent donc sur la présence d'une adresse IP, jamais sur `$?`.

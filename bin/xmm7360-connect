@@ -21,13 +21,44 @@ log() { echo "xmm7360: $*"; }
 has_ip() { ip -4 addr show wwan0 2>/dev/null | grep -q 'inet '; }
 
 wait_for_rpc() {
-    # La deconnexion decharge iosm : on le recharge sans attendre le timeout.
-    [ -e "$RPC_DEV" ] || modprobe iosm 2>/dev/null || true
-    for _ in $(seq 1 30); do
+    local secs="$1"
+    for _ in $(seq 1 "$secs"); do
         [ -e "$RPC_DEV" ] && return 0
         sleep 1
     done
     return 1
+}
+
+# La veille S3 fige le modem : au reveil, iosm se charge et s'attache mais
+# le peripherique ne repond plus et aucun port wwan n'est cree. Recharger
+# le module ne suffit pas — seul un remove/rescan PCI reinitialise
+# reellement le peripherique.
+pci_cycle() {
+    local dev found=""
+    for dev in /sys/bus/pci/devices/*; do
+        if [ "$(cat "$dev/vendor" 2>/dev/null)" = "0x8086" ] \
+           && [ "$(cat "$dev/device" 2>/dev/null)" = "0x7360" ]; then
+            found=$(basename "$dev")
+            log "reinitialisation PCI du modem ($found)"
+            echo 1 > "$dev/remove"
+            sleep 2
+            break
+        fi
+    done
+    [ -n "$found" ] || log "modem absent du bus PCI, rescan a l'aveugle"
+    echo 1 > /sys/bus/pci/rescan
+    sleep 2
+}
+
+ensure_device() {
+    [ -e "$RPC_DEV" ] && return 0
+    modprobe iosm 2>/dev/null || true
+    wait_for_rpc 10 && return 0
+    log "ports absents malgre le module charge : cycle PCI"
+    modprobe -r iosm 2>/dev/null || true
+    pci_cycle
+    modprobe iosm 2>/dev/null || true
+    wait_for_rpc 20
 }
 
 # Un seul log par session de connexion, les deux tentatives a la suite :
@@ -36,7 +67,7 @@ wait_for_rpc() {
 : >"$LOG"
 
 connect() {
-    wait_for_rpc || { log "$RPC_DEV absent apres 30 s"; return 1; }
+    ensure_device || { log "$RPC_DEV absent malgre le cycle PCI"; return 1; }
     # Pas d'IPv6 sur la 4G : le tunnel WireGuard n'achemine que
     # l'IPv4, et toute IPv6 obtenue par SLAAC sortirait DIRECTEMENT par
     # l'operateur, en contournant le VPN (fuite + rejet par les services
@@ -80,9 +111,9 @@ fi
 
 # Au reveil de veille le modem est eteint : un cycle complet du module le
 # remet dans un etat propre.
-log "pas d'IP au premier essai, rechargement du module iosm"
+log "pas d'IP au premier essai, reinitialisation complete du modem"
 modprobe -r iosm || true
-sleep 2
+pci_cycle
 modprobe iosm || { log "echec du chargement de iosm"; exit 1; }
 sleep 3
 
