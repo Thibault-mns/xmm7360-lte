@@ -211,6 +211,13 @@ PlasmoidItem {
         executable.run("xmm7360-apn set " + apn);
     }
 
+    // Annule l'operation en cours : stop tue le job d'activation (ou acheve
+    // l'arret) et repasse par ExecStop, qui coupe la radio. L'utilisateur
+    // peut ensuite relancer une connexion quand il le souhaite.
+    function cancel() {
+        executable.run("systemctl stop " + unit);
+    }
+
     function openLog() {
         executable.run("xdg-open " + logFile);
     }
@@ -388,12 +395,12 @@ PlasmoidItem {
 
             PlasmaComponents.Button {
                 Layout.fillWidth: true
-                enabled: !root.busy
-                icon.name: root.connected ? "network-disconnect" : "network-connect"
-                text: root.busy ? "Veuillez patienter…"
+                icon.name: root.busy ? "process-stop"
+                         : root.connected ? "network-disconnect" : "network-connect"
+                text: root.busy ? "Arrêter"
                      : root.stale ? "Reconnecter"
                      : root.connected ? "Déconnecter" : "Connecter"
-                onClicked: root.primaryAction()
+                onClicked: root.busy ? root.cancel() : root.primaryAction()
             }
         }
     }
