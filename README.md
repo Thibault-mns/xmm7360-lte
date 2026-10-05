@@ -139,6 +139,13 @@ grossit pas.
 
 ## Limites connues
 
+- **IPv6 volontairement coupée sur `wwan0`.** Un VPN « tout le trafic » en
+  IPv4 pur (WireGuard `allowed-ips=0.0.0.0/0`) laisserait l'IPv6 mobile
+  sortir en direct, en contournant le tunnel — fuite de trafic, et rejet
+  par les services qui whitelistent les IP (le préfixe IPv6 mobile change
+  sans cesse). `xmm7360-connect` désactive donc l'IPv6 de l'interface
+  avant la montée du lien ; deux lignes à commenter pour la retrouver.
+
 - **Pas d'indicateur de qualité de signal.** Les appels RPC existent
   (`UtaMsNetSingleShotRadioSignalReportingReq` 0x55,
   `UtaMsNetGetExtendedRadioSignalInfoReq` 0xEC) mais aucun `pack`/`unpack` n'est

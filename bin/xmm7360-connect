@@ -37,6 +37,14 @@ wait_for_rpc() {
 
 connect() {
     wait_for_rpc || { log "$RPC_DEV absent apres 30 s"; return 1; }
+    # Pas d'IPv6 sur la 4G : le tunnel WireGuard n'achemine que
+    # l'IPv4, et toute IPv6 obtenue par SLAAC sortirait DIRECTEMENT par
+    # l'operateur, en contournant le VPN (fuite + rejet par les services
+    # qui whitelistent les IP, le prefixe mobile changeant sans cesse).
+    # A faire avant la montee du lien, sinon le SLAAC gagne la course.
+    # Commenter ces deux lignes pour retrouver l'IPv6 operateur.
+    sysctl -qw net.ipv6.conf.wwan0.disable_ipv6=1 2>/dev/null || true
+    ip -6 addr flush dev wwan0 2>/dev/null || true
     echo "=== tentative $(date -Is) ===" >>"$LOG"
     # Le script sort en code 1 meme en cas de succes (sys.exit(1) final) et
     # en 0 quand l'ouverture RPC echoue : son code de retour n'est pas
