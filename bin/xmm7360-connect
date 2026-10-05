@@ -33,6 +33,16 @@ wait_for_rpc() {
 # le peripherique ne repond plus et aucun port wwan n'est cree. Recharger
 # le module ne suffit pas — seul un remove/rescan PCI reinitialise
 # reellement le peripherique.
+# Bascule la gestion d'energie de tous les ponts PCIe (on / auto).
+bridges_power() {
+    local p
+    for p in /sys/bus/pci/devices/*; do
+        [ "$(cat "$p/class" 2>/dev/null)" = "0x060400" ] \
+            && echo "$1" > "$p/power/control" 2>/dev/null
+    done
+    return 0
+}
+
 pci_cycle() {
     local dev found=""
     for dev in /sys/bus/pci/devices/*; do
@@ -46,8 +56,14 @@ pci_cycle() {
         fi
     done
     [ -n "$found" ] || log "modem absent du bus PCI, rescan a l'aveugle"
+    # Reveiller les ponts PCIe avant le rescan : un pont descendu en D3cold
+    # apres le retrait n'est pas re-enumere, et le modem disparait alors
+    # definitivement du bus jusqu'au prochain demarrage a froid.
+    bridges_power on
+    sleep 1
     echo 1 > /sys/bus/pci/rescan
-    sleep 2
+    sleep 3
+    bridges_power auto
 }
 
 ensure_device() {
